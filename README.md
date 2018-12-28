@@ -1,11 +1,11 @@
 # Setup Firewall using iptables
 
+## Simple firewall rules to filter packets using Linux kernel netfilter framework.
 
-path=`pwd`
-count=$(grep -c "*/10  *  * * *   root    ${path}/reset_iptables.sh" /etc/crontab)
-#Reset iptables every 10 minutes
-if [ $count -eq 0 ]; then
-#echo "*/10  *  * * *   root    ${path}/reset_iptables.sh" >> /etc/crontab
-  echo "*/10  *  * * *   root    ${path}/reset_iptables.sh" 
-fi
+## Steps
 
+> 1. Update set_iptables.sh with appropriate network interfaces.
+> 2. Add rules if you have more than 2 interfaces.
+> 3. Execute set_iptables.sh with sudo permission.
+>> sudo ./set_iptables.sh
+> 4. While testing remotely, add crontab entry to reset firewall every 10 minutes.
