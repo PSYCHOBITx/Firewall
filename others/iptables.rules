@@ -1,0 +1,66 @@
+iptables -F (or) iptables --flush
+iptables -A chain (-A append at the end of chain)
+iptables -A INPUT -p tcp (-p specify a specific protocol)
+iptables -A INPUT -s xxx.xxx.xxx.xxx -j DROP (-j for action)
+iptables -D INPUT -s xxx.xxx.xxx.xxx -j DROP (-D or --delete to delete a rule)
+iptables -A OUTPUT -p tcp --dport xxx -j DROP (--dport is destination port. Block outgoing packets through port xxx)
+iptables -A INPUT -p tcp --dport xxx -j ACCEPT (accept incoming packets through port xxx)
+#multiport rules
+iptables -A INPUT  -p tcp -m multiport --dports 22,80,443 -j ACCEPT
+iptables -A OUTPUT -p tcp -m multiport --sports 22,80,443 -j ACCEPT
+iptables -A OUTPUT -p tcp -d 192.168.100.0/24 --dport 22 -j ACCEPT (allow outgoing packets to a subnet on a particular port)
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 25 -j REDIRECT --to-port 2525 (port forwarding)
+iptables -A INPUT -p tcp --dport 80 -m limit --limit 100/minute --limit-burst 200 -j ACCEPT (limit number of connections to avoid DDoS)
+iptables -A INPUT -p tcp --syn --dport 22 -m connlimit --connlimit-above 3 -j REJECT
+iptables -A INPUT -p icmp -i eth0 -j DROP (disable ping)
+iptables -A INPUT -m mac --mac-source 00:00:00:00:00:00 -j DROP (block a mac address)
+iptables -A INPUT -i eth0 -s xxx.xxx.xxx.xxx -j DROP (block an IP)
+iptables -N custom-filter (define a new chain)
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT (allow incoming existing connections)
+iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT (allow outgoing existing connections)
+iptables -A INPUT -m conntrack --ctstate INVALID -j DROP (drop packets marked as invalid)
+iptables -A OUTPUT -p tcp --dports 25,465,587 -j REJECT (disable smtp)
+sudo invoke-rc.d iptables-persistent save (execute after updating rules)
+
+Strict rules
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+Then allow loopback
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+Log dropped packets
+iptables -A INPUT -i eth0 -j LOG --log-prefix "IPtables dropped packets:"
+Allow incoming SSH
+iptables -A INPUT -i eth0 -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+Allow outgoing SSH
+iptables -A OUTPUT -o eth0 -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i eth0 -p tcp --sport 22 -m state
+Allow SSH from a subnet
+iptables -A INPUT -i eth0 -p tcp -s 192.168.100.0/24 --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+Allow incoming HTTP/HTTPS
+iptables -A INPUT -i eth0 -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 80 -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -i eth0 -p tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+Allow RSYNC
+iptables -A INPUT -i eth0 -p tcp -s 192.168.101.0/24 --dport 873 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 873 -m state --state ESTABLISHED -j ACCEPT
+Prevent DDoS
+iptables -A INPUT -p tcp --dport 80 -m limit --limit 25/minute --limit-burst 100 -j ACCEPT
+
+
+
+
+
+#Sample firewall
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -i lo -m comment --comment "Allow loopback connections" -j ACCEPT
+iptables -A INPUT -p icmp -m comment --comment "Allow Ping to work as expected" -j ACCEPT
+iptables -A INPUT -p tcp -m multiport --destination-ports 22,25,53,80,443,465,5222,5269,5280,8999:9003 -j ACCEPT
+iptables -A INPUT -p udp -m multiport --destination-ports 53 -j ACCEPT
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+
